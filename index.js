@@ -34,8 +34,18 @@ app.get('/api/persons', (request, response) => {
     response.send(persons);
 })
 
+app.get('/api/persons/:id', (request, response) => {
+    const id = Number(request.params.id);
+    const person = persons.find(person => person.id === id)
+
+    if(person) {
+        response.send(person);
+    }
+    response.status(404);
+    response.send("not found");
+})
+
 app.get('/info', (request, response) => {
-    // count persons
     const entries = persons.length;
     const date_location = new Date();
     response.send(`Phonebook has info for ${entries} people <br/> ${date_location}`);
