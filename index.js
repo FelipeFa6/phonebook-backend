@@ -45,6 +45,15 @@ app.get('/api/persons/:id', (request, response) => {
     response.send("not found");
 })
 
+app.delete('/api/persons/:id', (request, response) => {
+    const id = Number(request.params.id);
+    const filtered = persons.filter(person => person.id !== id);
+    console.log(filtered)
+
+    response.status(204);
+    response.send(filtered);
+})
+
 app.get('/info', (request, response) => {
     const entries = persons.length;
     const date_location = new Date();
