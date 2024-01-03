@@ -128,13 +128,12 @@ app.put('/api/persons/:id', (request, response) => {
 });
 
 app.delete('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id);
-    const filtered = persons.filter(person => person.id !== id);
-    console.log(filtered)
+  const id = Number(request.params.id);
+  const updatedPersons = persons.filter(person => person.id !== id);
 
-    response.status(204);
-    response.send(filtered);
-})
+  persons = updatedPersons;
+  response.status(204).end();
+});
 
 app.get('/info', (request, response) => {
     const entries = persons.length;
