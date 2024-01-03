@@ -1,7 +1,9 @@
 const express = require('express');
+const morgan = require('morgan');
 
 const app = express();
 app.use(express.json());
+app.use(morgan('combined'));
 
 let persons = [
     { 
@@ -29,6 +31,7 @@ let persons = [
 const generateId = () => {
     return Math.floor(Math.random() * 9999);
 }
+
 
 app.get('/', (request, response) => {
     response.send("<h1>Hello World!!!</h1>");
