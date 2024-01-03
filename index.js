@@ -1,9 +1,9 @@
 const express = require('express');
 
 const app = express();
+app.use(express.json());
 
-//import the json file
-const persons = [
+let persons = [
     { 
         "id": 1,
         "name": "Arto Hellas", 
@@ -26,6 +26,10 @@ const persons = [
     }
 ]
 
+const generateId = () => {
+    return Math.floor(Math.random() * 9999);
+}
+
 app.get('/', (request, response) => {
     response.send("<h1>Hello World!!!</h1>");
 })
@@ -44,6 +48,31 @@ app.get('/api/persons/:id', (request, response) => {
     response.status(404);
     response.send("not found");
 })
+
+app.post('/api/persons', (request, response) => {
+
+    const body = request.body;
+
+    if(!body.name){
+        return response.status(400).json({
+            error: "name missing"
+        })
+    }
+    if(!body.phone){ 
+        return response.status(400).json({
+            error: "phone missing"
+        })
+    }
+
+    const person = {
+        "id": generateId(),
+        "name": body.name,
+        "phone": body.phone,
+    }
+
+    persons = persons.concat(person);
+    response.json(person);
+});
 
 app.delete('/api/persons/:id', (request, response) => {
     const id = Number(request.params.id);
