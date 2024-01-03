@@ -3,7 +3,23 @@ const morgan = require('morgan');
 
 const app = express();
 app.use(express.json());
-app.use(morgan('combined'));
+app.use(morgan(function (tokens, request, response) {
+    let data = '';
+
+    if(tokens.method(request, response) === 'POST') {
+        data = JSON.stringify(request.body);
+    }
+
+    return [
+        tokens.method(request, response),
+        tokens.url(request, response),
+        tokens.status(request, response),
+        tokens.res(request, response, 'content-length'), '-',
+        tokens['response-time'](request, response), 'ms',
+        data
+    ].join(' ')
+}))
+
 
 let persons = [
     { 
