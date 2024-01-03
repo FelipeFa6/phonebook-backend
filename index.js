@@ -106,6 +106,28 @@ app.post('/api/persons', (request, response) => {
     response.json(person);
 });
 
+app.put('/api/persons/:id', (request, response) => {
+    const body = request.body;
+    const id = Number(request.params.id);
+
+    const personIndex = persons.findIndex(person => person.id === id);
+
+    if (personIndex !== -1) {
+        const updatedPerson = {
+            ...persons[personIndex],
+            phone: body.phone,
+        };
+
+        persons[personIndex] = updatedPerson;
+
+        response.status(200);
+        response.send(`Updated ${updatedPerson.name}`);
+    } else {
+        response.status(404);
+        response.send(`${id} not found`);
+    }
+});
+
 app.delete('/api/persons/:id', (request, response) => {
     const id = Number(request.params.id);
     const filtered = persons.filter(person => person.id !== id);
