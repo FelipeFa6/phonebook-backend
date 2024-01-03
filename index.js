@@ -121,10 +121,9 @@ app.put('/api/persons/:id', (request, response) => {
         persons[personIndex] = updatedPerson;
 
         response.status(200);
-        response.send(`Updated ${updatedPerson.name}`);
+        response.send(updatedPerson);
     } else {
-        response.status(404);
-        response.send(`${id} not found`);
+        response.status(404).end();
     }
 });
 
