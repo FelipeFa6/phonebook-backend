@@ -1,8 +1,11 @@
 const express = require('express');
 const morgan = require('morgan');
+const cors = require('cors')
 
 const app = express();
 app.use(express.json());
+app.use(cors());
+
 app.use(morgan(function (tokens, request, response) {
     let data = '';
 
@@ -50,10 +53,12 @@ const generateId = () => {
 
 
 app.get('/', (request, response) => {
+    response.status(200);
     response.send("<h1>Hello World!!!</h1>");
 })
 
 app.get('/api/persons', (request, response) => {
+    response.status(200);
     response.send(persons);
 })
 
@@ -62,6 +67,7 @@ app.get('/api/persons/:id', (request, response) => {
     const person = persons.find(person => person.id === id)
 
     if(person) {
+        response.status(200);
         response.send(person);
     }
     response.status(404);
@@ -96,6 +102,7 @@ app.post('/api/persons', (request, response) => {
     }
 
     persons = persons.concat(person);
+    response.status(200);
     response.json(person);
 });
 
