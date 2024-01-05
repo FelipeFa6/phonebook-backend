@@ -1,3 +1,5 @@
+require('dotenv').config();
+const Person = require('./models/person');
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors')
@@ -23,34 +25,9 @@ app.use(morgan(function (tokens, request, response) {
     ].join(' ')
 }))
 
-
-let persons = [
-    { 
-        "id": 1,
-        "name": "Arto Hellas", 
-        "phone": "040-123456"
-    },
-    { 
-        "id": 2,
-        "name": "Ada Lovelace", 
-        "phone": "39-44-5323523"
-    },
-    { 
-        "id": 3,
-        "name": "Dan Abramov", 
-        "phone": "12-43-234345"
-    },
-    { 
-        "id": 4,
-        "name": "Mary Poppendieck", 
-        "phone": "39-23-6423122"
-    }
-]
-
 const generateId = () => {
     return Math.floor(Math.random() * 9999);
 }
-
 
 app.get('/', (request, response) => {
     response.status(200);
@@ -58,90 +35,118 @@ app.get('/', (request, response) => {
 })
 
 app.get('/api/persons', (request, response) => {
-    response.status(200);
-    response.send(persons);
+    Person.find({})
+        .then(result => {
+            response.status(200).json(result);
+        })
+        .catch(e => {
+            const errorMessage = e.message || 'Internal Server Error';
+            response.status(500).json({ error: `Server Failure. ${errorMessage}`});
+        }) ;
 })
 
 app.get('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id);
-    const person = persons.find(person => person.id === id)
+    const id = request.params.id;
 
-    if(person) {
-        response.status(200);
-        response.send(person);
-    }
-    response.status(404);
-    response.send("not found");
-})
+    Person.findById(id)
+        .then(person => {
+            if (person) {
+                response.status(200).json(person);
+            } else {
+                response.status(404).send('Not found');
+            }
+        })
+        .catch(error => {
+            console.error('Error finding person:', error);
+            response.status(500).json({ error: 'Internal Server Error' });
+        });
+});
 
 app.post('/api/persons', (request, response) => {
-
     const body = request.body;
 
-    if(!body.name){
+    if (!body.name || !body.phone) {
         return response.status(400).json({
-            error: "name missing"
-        })
-    }
-    if(!body.phone){ 
-        return response.status(400).json({
-            error: "phone missing"
-        })
+            error: 'Name and phone are required'
+        });
     }
 
-    if(persons.find(person => person.name === body.name)) {
-        return response.status(400).json({
-            error: `${body.name} already registered.`
+    Person.findOne({ name: body.name })
+        .then(existingPerson => {
+            if (existingPerson) {
+                return response.status(400).json({
+                    error: `${body.name} already registered.`
+                });
+            }
+
+            const newPerson = new Person({
+                name: body.name,
+                phone: body.phone
+            });
+
+            newPerson.save()
+                .then(savedPerson => {
+                    response.status(201).json(savedPerson);
+                })
+                .catch(error => {
+                    console.error('error saving person:', error);
+                    response.status(500).json({ error: 'Internal Server Error' });
+                });
         })
-    }
-
-    const person = {
-        "id": generateId(),
-        "name": body.name,
-        "phone": body.phone,
-    }
-
-    persons = persons.concat(person);
-    response.status(200);
-    response.json(person);
+        .catch(error => {
+            console.error('error checking existing person:', error);
+            response.status(500).json({ error: 'Internal Server Error' });
+        });
 });
 
 app.put('/api/persons/:id', (request, response) => {
+    const id = request.params.id;
     const body = request.body;
-    const id = Number(request.params.id);
 
-    const personIndex = persons.findIndex(person => person.id === id);
-
-    if (personIndex !== -1) {
-        const updatedPerson = {
-            ...persons[personIndex],
-            phone: body.phone,
-        };
-
-        persons[personIndex] = updatedPerson;
-
-        response.status(200);
-        response.send(updatedPerson);
-    } else {
-        response.status(404).end();
-    }
+    Person.findByIdAndUpdate(id, { phone: body.phone }, { new: true })
+        .then(updatedPerson => {
+            if (updatedPerson) {
+                response.status(200).json(updatedPerson);
+            } else {
+                response.status(404).end();
+            }
+        })
+        .catch(error => {
+            console.error('error updating person:', error);
+            response.status(500).json({ error: 'Internal Server Error' });
+        });
 });
 
 app.delete('/api/persons/:id', (request, response) => {
-  const id = Number(request.params.id);
-  const updatedPersons = persons.filter(person => person.id !== id);
+    const id = request.params.id;
 
-  persons = updatedPersons;
-  response.status(204).end();
+    Person.findByIdAndDelete(id)
+        .then(deletedPerson => {
+            if (deletedPerson) {
+                response.status(204).end();
+            } else {
+                response.status(404).end();
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting person:', error);
+            response.status(500).json({ error: 'Internal Server Error' });
+        });
 });
 
 app.get('/info', (request, response) => {
-    const entries = persons.length;
-    const date_location = new Date();
-    response.send(`Phonebook has info for ${entries} people <br/> ${date_location}`);
-})
+    Person.countDocuments({})
+        .then(count => {
+            const dateLocation = new Date();
+            response.send(`Phonebook has info for ${count} people <br/> ${dateLocation}`);
+        })
+        .catch(error => {
+            console.error('Error retrieving document count:', error);
+            response.status(500).json({ error: 'Internal Server Error' });
+        });
+});
 
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 app.listen(PORT, () => {
     console.log(`Server running at ${PORT}`);
 })
