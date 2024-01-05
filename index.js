@@ -1,13 +1,18 @@
 require('dotenv').config();
-const Person = require('./models/person');
-const express = require('express');
-const morgan = require('morgan');
-const cors = require('cors')
 
+const Person          = require('./models/person');
+const errorHandler    = require('./middlewares/errorHandler');
+const unknownEndpoint = require('./middlewares/unknownEndpoint');
+
+const express = require('express');
+const morgan  = require('morgan');
+const cors    = require('cors')
 const app = express();
+
 app.use(express.json());
 app.use(cors());
 
+// custom request
 app.use(morgan(function (tokens, request, response) {
     let data = '';
 
@@ -25,27 +30,20 @@ app.use(morgan(function (tokens, request, response) {
     ].join(' ')
 }))
 
-const generateId = () => {
-    return Math.floor(Math.random() * 9999);
-}
-
 app.get('/', (request, response) => {
     response.status(200);
     response.send("<h1>Hello World!!!</h1>");
 })
 
-app.get('/api/persons', (request, response) => {
+app.get('/api/persons', (request, response, next) => {
     Person.find({})
         .then(result => {
             response.status(200).json(result);
         })
-        .catch(e => {
-            const errorMessage = e.message || 'Internal Server Error';
-            response.status(500).json({ error: `Server Failure. ${errorMessage}`});
-        }) ;
+        .catch(e => next(e));
 })
 
-app.get('/api/persons/:id', (request, response) => {
+app.get('/api/persons/:id', (request, response, next) => {
     const id = request.params.id;
 
     Person.findById(id)
@@ -56,13 +54,10 @@ app.get('/api/persons/:id', (request, response) => {
                 response.status(404).send('Not found');
             }
         })
-        .catch(error => {
-            console.error('Error finding person:', error);
-            response.status(500).json({ error: 'Internal Server Error' });
-        });
+        .catch(e => next(e));
 });
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
     const body = request.body;
 
     if (!body.name || !body.phone) {
@@ -88,18 +83,12 @@ app.post('/api/persons', (request, response) => {
                 .then(savedPerson => {
                     response.status(201).json(savedPerson);
                 })
-                .catch(error => {
-                    console.error('error saving person:', error);
-                    response.status(500).json({ error: 'Internal Server Error' });
-                });
+                .catch(e => next(e));
         })
-        .catch(error => {
-            console.error('error checking existing person:', error);
-            response.status(500).json({ error: 'Internal Server Error' });
-        });
+        .catch(e => next(e));
 });
 
-app.put('/api/persons/:id', (request, response) => {
+app.put('/api/persons/:id', (request, response, next) => {
     const id = request.params.id;
     const body = request.body;
 
@@ -111,13 +100,10 @@ app.put('/api/persons/:id', (request, response) => {
                 response.status(404).end();
             }
         })
-        .catch(error => {
-            console.error('error updating person:', error);
-            response.status(500).json({ error: 'Internal Server Error' });
-        });
+        .catch(e => next(e));
 });
 
-app.delete('/api/persons/:id', (request, response) => {
+app.delete('/api/persons/:id', (request, response, next) => {
     const id = request.params.id;
 
     Person.findByIdAndDelete(id)
@@ -128,22 +114,16 @@ app.delete('/api/persons/:id', (request, response) => {
                 response.status(404).end();
             }
         })
-        .catch(error => {
-            console.error('Error deleting person:', error);
-            response.status(500).json({ error: 'Internal Server Error' });
-        });
+        .catch(e => next(e));
 });
 
-app.get('/info', (request, response) => {
+app.get('/info', (request, response, next) => {
     Person.countDocuments({})
         .then(count => {
             const dateLocation = new Date();
             response.send(`Phonebook has info for ${count} people <br/> ${dateLocation}`);
         })
-        .catch(error => {
-            console.error('Error retrieving document count:', error);
-            response.status(500).json({ error: 'Internal Server Error' });
-        });
+        .catch(e => next(e));
 });
 
 const PORT = process.env.PORT
@@ -151,3 +131,5 @@ app.listen(PORT, () => {
     console.log(`Server running at ${PORT}`);
 })
 
+app.use(unknownEndpoint)
+app.use(errorHandler)
