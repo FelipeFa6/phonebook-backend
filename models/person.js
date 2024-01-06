@@ -14,7 +14,11 @@ mongoose.connect(url)
     })
 
 const personSchema = new mongoose.Schema({
-    name: String,
+    name: {
+        minLength: 5,
+        required: true,
+        type: String
+    },
     phone: String
 })
 
